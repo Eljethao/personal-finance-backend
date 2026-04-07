@@ -1,4 +1,5 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { v4 as uuidv4 } from 'uuid';
 
 const s3 = new S3Client({
@@ -34,4 +35,12 @@ export const deleteSlipImage = async (url: string): Promise<void> => {
   const key = url.split('.amazonaws.com/')[1];
   if (!key) return;
   await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
+};
+
+/** Generate a presigned GET URL valid for `expiresIn` seconds (default 1 hour). */
+export const getPresignedUrl = async (storedUrl: string, expiresIn = 3600): Promise<string> => {
+  const key = storedUrl.split('.amazonaws.com/')[1];
+  if (!key) return storedUrl;
+  const command = new GetObjectCommand({ Bucket: BUCKET, Key: key });
+  return getSignedUrl(s3, command, { expiresIn });
 };

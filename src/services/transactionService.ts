@@ -1,6 +1,16 @@
 import { Transaction } from '../models/Transaction';
 import { TransactionType } from '../types';
 import { Types } from 'mongoose';
+import { getPresignedUrl } from './s3Service';
+
+/** Replace the stored private S3 URL with a 1-hour presigned URL. */
+const withPresignedUrl = async (transaction: any): Promise<any> => {
+  const obj = transaction.toObject ? transaction.toObject() : { ...transaction };
+  if (obj.slipImageUrl) {
+    obj.slipImageUrl = await getPresignedUrl(obj.slipImageUrl);
+  }
+  return obj;
+};
 
 interface TransactionFilters {
   type?: TransactionType;
@@ -28,7 +38,7 @@ export const getTransactions = async (userId: string, filters: TransactionFilter
   const limit = filters.limit || 20;
   const skip = (page - 1) * limit;
 
-  const [transactions, total] = await Promise.all([
+  const [raw, total] = await Promise.all([
     Transaction.find(query)
       .populate('categoryId', 'name icon color type')
       .populate('walletId', 'name icon currency')
@@ -37,6 +47,8 @@ export const getTransactions = async (userId: string, filters: TransactionFilter
       .limit(limit),
     Transaction.countDocuments(query),
   ]);
+
+  const transactions = await Promise.all(raw.map(withPresignedUrl));
 
   return {
     transactions,
@@ -82,7 +94,7 @@ export const updateTransaction = async (
     .populate('categoryId', 'name icon color type')
     .populate('walletId', 'name icon currency');
   if (!transaction) throw Object.assign(new Error('Transaction not found'), { status: 404 });
-  return transaction;
+  return withPresignedUrl(transaction);
 };
 
 export const deleteTransaction = async (userId: string, transactionId: string) => {
