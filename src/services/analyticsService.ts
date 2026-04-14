@@ -87,7 +87,7 @@ export const getByCategory = async (
     { $unwind: '$category' },
     {
       $project: {
-        category: { name: 1, icon: 1, color: 1, type: 1 },
+        category: { _id: 1, name: 1, icon: 1, color: 1, type: 1 },
         total: 1,
         count: 1,
       },
