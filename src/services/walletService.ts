@@ -45,7 +45,7 @@ export const createWallet = async (
 export const updateWallet = async (
   userId: string,
   walletId: string,
-  data: Partial<{ name: string; icon: string; currency: string }>
+  data: Partial<{ name: string; icon: string; currency: string; initialBalance: number }>
 ) => {
   const wallet = await Wallet.findOneAndUpdate({ _id: walletId, userId }, data, { new: true });
   if (!wallet) throw Object.assign(new Error('Wallet not found'), { status: 404 });
